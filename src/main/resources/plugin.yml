@@ -1,0 +1,16 @@
+name: BetterGen
+version: ${project.version}
+main: org.betterbox.betterGen.BetterGen
+api-version: 1.18
+description: SkyGen plugin. https://github.com/Grzybol/BetterGen
+author: Grzybol
+commands:
+  bg:
+    description: General command
+    usage: /be
+    aliases:
+      - bettergen
+permissions:
+  bettergen:
+    description: Daje dostęp do komendy /be setrewards.
+    default: op

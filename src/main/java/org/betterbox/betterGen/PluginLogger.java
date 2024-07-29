@@ -28,6 +28,7 @@ public class PluginLogger {
         // Tworzenie folderu dla logów, jeśli nie istnieje
         File logFolder = new File(folderPath,"logs");
         if (!logFolder.exists()) {
+
             logFolder.mkdirs();
         }
 
