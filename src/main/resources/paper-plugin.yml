@@ -1,0 +1,4 @@
+name: BetterGen
+version: '1.0-SNAPSHOT'
+main: org.betterbox.betterGen.BetterGen
+api-version: '1.18'
