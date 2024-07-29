@@ -114,8 +114,6 @@ public final class BetterGen extends JavaPlugin implements Listener {
                     int itemsPerSpawn = spawnerSection.getInt("itemsPerSpawn");
                     String itemName=spawnerSection.getString("itemName");
 
-                    String passengerMobName = spawnerSection.getString("passengerMobName", null);
-
                     // Zapisywanie danych spawnera do struktury w pamięci
                     generatorsData.put(key, new Generator(key,itemName,location,itemsPerSpawn,maxItems,cooldown));
 
@@ -129,7 +127,7 @@ public final class BetterGen extends JavaPlugin implements Listener {
         Item source = event.getEntity();
         Item target = event.getTarget();
 
-        getLogger().info("Item stack merge detected: " + source.getItemStack().getType() + " into " + target.getItemStack().getType());
+        pluginLogger.log(PluginLogger.LogLevel.DEBUG,"Item stack merge detected: " + source.getItemStack().getType() + " into " + target.getItemStack().getType());
 
         // Pobierz nazwę generatora dla przedmiotu źródłowego, jeśli istnieje
         String generatorName = spawnedItems.get(source.getUniqueId());
@@ -151,9 +149,9 @@ public final class BetterGen extends JavaPlugin implements Listener {
             }
 
             // Informacje debugowe
-            getLogger().info("Updated stacked items for generator: " + generatorName);
+            pluginLogger.log(PluginLogger.LogLevel.DEBUG,"Updated stacked items for generator: " + generatorName);
         } else {
-            getLogger().info("Source item does not belong to any tracked generator.");
+            pluginLogger.log(PluginLogger.LogLevel.DEBUG,"Source item does not belong to any tracked generator.");
         }
     }
 
@@ -185,7 +183,7 @@ public final class BetterGen extends JavaPlugin implements Listener {
             if (generator.spawnedItemsCount != actualCount) {
                 generator.spawnedItemsCount = actualCount;
                 pluginLogger.log(PluginLogger.LogLevel.DEBUG, "Updated spawnedItemsCount for generator: " + generatorName + " to " + actualCount);
-                getLogger().info("Updated spawnedItemsCount for generator: " + generatorName + " to " + actualCount);
+                pluginLogger.log(PluginLogger.LogLevel.DEBUG,"Updated spawnedItemsCount for generator: " + generatorName + " to " + actualCount);
             }
         }
     }
@@ -322,11 +320,11 @@ public final class BetterGen extends JavaPlugin implements Listener {
             Generator generator = generatorsData.get(generatorName);
             if (generator != null) {
                 generator.spawnedItemsCount++;
-                getLogger().info("Item spawned from generator" +generatorName+", spawnedItemCount: "+generator.spawnedItemsCount);
+                pluginLogger.log(PluginLogger.LogLevel.DEBUG,"Item spawned from generator" +generatorName+", spawnedItemCount: "+generator.spawnedItemsCount);
 
             }
         } else {
-            getLogger().info("Invalid world or itemStack for location: " + location.toString());
+            pluginLogger.log(PluginLogger.LogLevel.DEBUG,"Invalid world or itemStack for location: " + location.toString());
         }
     }
 
