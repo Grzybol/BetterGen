@@ -1,5 +1,6 @@
 package org.betterbox.betterGen;
 
+import org.bstats.bukkit.Metrics;
 import org.bukkit.*;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -37,6 +38,8 @@ public final class BetterGen extends JavaPlugin implements Listener {
 
     @Override
     public void onEnable() {
+        int pluginId = 22834; // Zamień na rzeczywisty ID twojego pluginu na bStats
+        Metrics metrics = new Metrics(this, pluginId);
         getServer().getPluginManager().registerEvents(this, this);
         java.util.logging.Logger logger = this.getLogger();
         folderPath = getDataFolder().getAbsolutePath();
@@ -48,7 +51,7 @@ public final class BetterGen extends JavaPlugin implements Listener {
         if (!dataFolder.exists()) {
             dataFolder.mkdirs();
         }
-        Set<PluginLogger.LogLevel> defaultLogLevels = EnumSet.of(PluginLogger.LogLevel.INFO,PluginLogger.LogLevel.DEBUG, PluginLogger.LogLevel.WARNING, PluginLogger.LogLevel.ERROR);
+        Set<PluginLogger.LogLevel> defaultLogLevels = EnumSet.of(PluginLogger.LogLevel.INFO, PluginLogger.LogLevel.WARNING, PluginLogger.LogLevel.ERROR);
         pluginLogger = new PluginLogger(folderPath, defaultLogLevels,this);
         pluginLogger.log(PluginLogger.LogLevel.INFO, "Starting startGeneratorsScheduler");
         startGeneratorsScheduler();
