@@ -55,7 +55,7 @@ public final class BetterGen extends JavaPlugin implements Listener {
         if (!dataFolder.exists()) {
             dataFolder.mkdirs();
         }
-        Set<PluginLogger.LogLevel> defaultLogLevels = EnumSet.of(PluginLogger.LogLevel.INFO, PluginLogger.LogLevel.WARNING,PluginLogger.LogLevel.DEBUG, PluginLogger.LogLevel.ERROR);
+        Set<PluginLogger.LogLevel> defaultLogLevels = EnumSet.of(PluginLogger.LogLevel.INFO, PluginLogger.LogLevel.WARNING, PluginLogger.LogLevel.ERROR);
         pluginLogger = new PluginLogger(folderPath, defaultLogLevels,this);
         pluginLogger.log(PluginLogger.LogLevel.INFO, "Starting startGeneratorsScheduler");
         startGeneratorsScheduler();
