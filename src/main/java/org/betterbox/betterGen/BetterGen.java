@@ -8,6 +8,7 @@ import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Listener;
@@ -21,6 +22,7 @@ import org.bukkit.event.EventHandler;
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
+import org.bukkit.util.Vector;
 
 import static org.bukkit.Bukkit.getEntity;
 
@@ -29,6 +31,7 @@ public final class BetterGen extends JavaPlugin implements Listener {
     private File generatorsFile;
     private BukkitTask generatorsTaks;
     private Map<UUID,String > spawnedItems = new HashMap<>(); // Map to store references to spawned items
+    private Map<String,List<UUID> > spawnedItemsV2 = new HashMap<>(); // Map to store references to stacked items
     private Map<String,List<UUID> > stackedItems = new HashMap<>(); // Map to store references to stacked items
     public Map<String, Long> generatorLastSpawnedTimes = new HashMap<>();
     private PluginLogger pluginLogger;
@@ -42,6 +45,7 @@ public final class BetterGen extends JavaPlugin implements Listener {
         Metrics metrics = new Metrics(this, pluginId);
         getServer().getPluginManager().registerEvents(this, this);
         java.util.logging.Logger logger = this.getLogger();
+
         folderPath = getDataFolder().getAbsolutePath();
         logger.info("[BetterGen] Initializing");
         logger.info("[BetterGen] Author " + this.getDescription().getAuthors());
@@ -51,7 +55,7 @@ public final class BetterGen extends JavaPlugin implements Listener {
         if (!dataFolder.exists()) {
             dataFolder.mkdirs();
         }
-        Set<PluginLogger.LogLevel> defaultLogLevels = EnumSet.of(PluginLogger.LogLevel.INFO, PluginLogger.LogLevel.WARNING, PluginLogger.LogLevel.ERROR);
+        Set<PluginLogger.LogLevel> defaultLogLevels = EnumSet.of(PluginLogger.LogLevel.INFO, PluginLogger.LogLevel.WARNING,PluginLogger.LogLevel.DEBUG, PluginLogger.LogLevel.ERROR);
         pluginLogger = new PluginLogger(folderPath, defaultLogLevels,this);
         pluginLogger.log(PluginLogger.LogLevel.INFO, "Starting startGeneratorsScheduler");
         startGeneratorsScheduler();
@@ -92,6 +96,7 @@ public final class BetterGen extends JavaPlugin implements Listener {
         }
     }
     public void loadGenerators(){
+        generatorsData.clear();
 
         generatorsFile = new File(folderPath,"generators.yml");
 
@@ -111,6 +116,7 @@ public final class BetterGen extends JavaPlugin implements Listener {
             for (String key : generatorsSection.getKeys(false)) {
                 ConfigurationSection spawnerSection = generatorsSection.getConfigurationSection(key);
                 if (spawnerSection != null) {
+
                     String location = spawnerSection.getString("location");
                     int cooldown = spawnerSection.getInt("cooldown");
                     int maxItems = spawnerSection.getInt("maxItems");
@@ -134,6 +140,7 @@ public final class BetterGen extends JavaPlugin implements Listener {
 
         // Pobierz nazwę generatora dla przedmiotu źródłowego, jeśli istnieje
         String generatorName = spawnedItems.get(source.getUniqueId());
+
         if (generatorName != null) {
             // Sprawdzamy, czy dla tego generatora już istnieje lista UUID w mapie stackedItems
             List<UUID> uuidList = stackedItems.computeIfAbsent(generatorName, k -> new ArrayList<>());
@@ -195,14 +202,14 @@ public final class BetterGen extends JavaPlugin implements Listener {
         generatorsTaks = new BukkitRunnable() {
             @Override
             public void run() {
-                checkAndUpdateSpawnedItems();
                 spawnItemFromGenerator();
+                checkAndUpdateSpawnedItems();
             }
         }.runTaskTimer(this, 0, 10); // Interval converted to ticks (1 second)
     }
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        if (args.length==2&&args[1].equals("reload")){
+        if (args.length==2&&args[0].equals("reload")){
             if(!sender.isOp()){
                     sender.sendMessage(ChatColor.GOLD + "" + ChatColor.BOLD + "[BetterGen]" + ChatColor.DARK_RED + " You don't have permission!");
             }
@@ -230,6 +237,7 @@ public final class BetterGen extends JavaPlugin implements Listener {
             Player player = (Player) sender;
             if (player.isOp()) {
                 Location targetLocation = player.getTargetBlock(null, 100).getLocation();
+                targetLocation.add(0, 1, 0);
                 saveGenerator(targetLocation,generatorName,itemName,itemsPerSpawn,maxItems, Cooldown);
             } else {
                 player.sendMessage(ChatColor.GOLD + "" + ChatColor.BOLD + "[BetterGen]" + ChatColor.DARK_RED + " You don't have permission!");
@@ -287,6 +295,7 @@ public final class BetterGen extends JavaPlugin implements Listener {
             for (Map.Entry<String, Generator> entry : generatorsData.entrySet()) {
                 pluginLogger.log(PluginLogger.LogLevel.DEBUG, "Checking generator: " + entry.getKey());
                 Generator generator = entry.getValue();
+                String generatorName = generator.generatorName;
                 long lastSpawnTime = generatorLastSpawnedTimes.getOrDefault(entry.getKey(), 0L);
 
                 long timeSinceLastSpawn = currentTime - lastSpawnTime;
@@ -298,16 +307,40 @@ public final class BetterGen extends JavaPlugin implements Listener {
 
             Location location = getLocationFromString(generator.location);
             if (generator.spawnedItemsCount < generator.maxItems) {
+
                 int toSpawn = Math.min(generator.itemsPerSpawn, generator.maxItems - generator.spawnedItemsCount);
                 for (int i = 0; i < toSpawn; i++) {
 
-                    spawnItemAtLocation(location, getItemStackFromString(generator.itemName), entry.getKey());
+                    World world = location.getWorld();
+                    generator.spawnedItemsCount++;
+                    pluginLogger.log(PluginLogger.LogLevel.DEBUG,"Item spawned from generator" +generatorName+", spawnedItemCount: "+generator.spawnedItemsCount);
+                    ItemStack itemToSpawn = getItemStackFromString(generator.itemName);
+                    Item item = (Item) world.dropItemNaturally(location,itemToSpawn);
+                    item.setVelocity(new Vector(0, 0, 0));
+                    //addUUIDtoStack(generatorName, item.getUniqueId());
+                    spawnedItems.put(item.getUniqueId(), generatorName);
+
+                    //spawnItemAtLocation(location, getItemStackFromString(generator.itemName), entry.getKey());
                 }
                 generator.spawnedItemsCount += toSpawn;
                 generatorLastSpawnedTimes.put(entry.getKey(), System.currentTimeMillis());
             }
                 pluginLogger.log(PluginLogger.LogLevel.DEBUG, "Finished checking generator: " + entry.getKey());
         }
+    }
+    public void addUUIDtoStack(String key, UUID uuid) {
+        // Get the list of UUIDs for the given key
+        List<UUID> uuids = spawnedItemsV2.get(key);
+
+        // Check if the list already exists
+        if (uuids == null) {
+            // If not, create a new list and add it to the map
+            uuids = new ArrayList<>();
+            stackedItems.put(key, uuids);
+        }
+
+        // Add the UUID to the list
+        uuids.add(uuid);
     }
 
 
@@ -316,8 +349,8 @@ public final class BetterGen extends JavaPlugin implements Listener {
     public void spawnItemAtLocation(Location location, ItemStack itemStack, String generatorName) {
         World world = location.getWorld();
         if (world != null && itemStack != null) {
-            Item droppedItem = world.dropItemNaturally(location, itemStack);
-            spawnedItems.put(droppedItem.getUniqueId(), generatorName);
+            Item droppedItem = world.dropItem(location, itemStack);
+
 
 
             Generator generator = generatorsData.get(generatorName);
