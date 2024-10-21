@@ -209,7 +209,7 @@ public final class BetterGen extends JavaPlugin implements Listener {
     }
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        if (args.length==2&&args[0].equals("reload")){
+        if (args.length==1&&args[0].equals("reload")){
             if(!sender.isOp()){
                     sender.sendMessage(ChatColor.GOLD + "" + ChatColor.BOLD + "[BetterGen]" + ChatColor.DARK_RED + " You don't have permission!");
             }
