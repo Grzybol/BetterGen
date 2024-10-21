@@ -7,10 +7,21 @@ author: Grzybol
 commands:
   bg:
     description: General command
-    usage: /be
+    usage: /bg create
     aliases:
       - bettergen
+  bg create:
+    description: Create generator command
+    usage: /bg genName itemName itemsPerSpawn maxItems Cooldown
+    aliases:
+      - bettergen create
+  bg reload:
+    description: Reloads data and config
+    usage: /bg reload
+    aliases:
+      - bettergen reload
 permissions:
   bettergen:
     description: Daje dostęp do komendy /be setrewards.
     default: op
+

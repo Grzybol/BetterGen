@@ -30,14 +30,17 @@ public final class BetterGen extends JavaPlugin implements Listener {
 
     private File generatorsFile;
     private BukkitTask generatorsTaks;
-    private Map<UUID,String > spawnedItems = new HashMap<>(); // Map to store references to spawned items
-    private Map<String,List<UUID> > spawnedItemsV2 = new HashMap<>(); // Map to store references to stacked items
-    private Map<String,List<UUID> > stackedItems = new HashMap<>(); // Map to store references to stacked items
+    Map<UUID,String > spawnedItems = new HashMap<>(); // Map to store references to spawned items
+
+    Map<String,List<UUID> > stackedItems = new HashMap<>(); // Map to store references to stacked items
     public Map<String, Long> generatorLastSpawnedTimes = new HashMap<>();
     private PluginLogger pluginLogger;
     private String folderPath;
     YamlConfiguration generatorsConfig;
     private Map<String, Generator> generatorsData = new HashMap<>();
+    FileManager fileManager;
+    ConfigManager configManager;
+    EventManager eventManager;
 
     @Override
     public void onEnable() {
@@ -57,19 +60,29 @@ public final class BetterGen extends JavaPlugin implements Listener {
         }
         Set<PluginLogger.LogLevel> defaultLogLevels = EnumSet.of(PluginLogger.LogLevel.INFO, PluginLogger.LogLevel.WARNING, PluginLogger.LogLevel.ERROR);
         pluginLogger = new PluginLogger(folderPath, defaultLogLevels,this);
+        folderPath =getDataFolder().getAbsolutePath();
+        configManager = new ConfigManager(this, pluginLogger, folderPath);
+        fileManager = new FileManager(getDataFolder().getAbsolutePath(),this,this,pluginLogger);
+        getCommand("bg").setExecutor(new CommandManager(this,this,fileManager,pluginLogger,configManager));
+        eventManager = new EventManager(pluginLogger,this);
+        getServer().getPluginManager().registerEvents(eventManager, this);
         pluginLogger.log(PluginLogger.LogLevel.INFO, "Starting startGeneratorsScheduler");
         startGeneratorsScheduler();
         pluginLogger.log(PluginLogger.LogLevel.INFO, "startGeneratorsScheduler started, loading loadGenerators();");
-
-
-
-        // Plugin startup logic
         loadGenerators();
-        getCommand("bg").setExecutor(this);
         pluginLogger.log(PluginLogger.LogLevel.INFO, "Plugin enabled");
         logger.info("[BetterGen] Running");
 
 
+    }
+    public void startGeneratorsScheduler() {
+        generatorsTaks = new BukkitRunnable() {
+            @Override
+            public void run() {
+                spawnItemFromGenerator();
+                checkAndUpdateSpawnedItems();
+            }
+        }.runTaskTimer(this, 0, 10); // Interval converted to ticks (1 second)
     }
     static class Generator {
         String generatorName,itemName, location;
@@ -131,39 +144,7 @@ public final class BetterGen extends JavaPlugin implements Listener {
 
         }
     }
-    @EventHandler
-    public void onItemMerge(ItemMergeEvent event) {
-        Item source = event.getEntity();
-        Item target = event.getTarget();
 
-        pluginLogger.log(PluginLogger.LogLevel.DEBUG,"Item stack merge detected: " + source.getItemStack().getType() + " into " + target.getItemStack().getType());
-
-        // Pobierz nazwę generatora dla przedmiotu źródłowego, jeśli istnieje
-        String generatorName = spawnedItems.get(source.getUniqueId());
-
-        if (generatorName != null) {
-            // Sprawdzamy, czy dla tego generatora już istnieje lista UUID w mapie stackedItems
-            List<UUID> uuidList = stackedItems.computeIfAbsent(generatorName, k -> new ArrayList<>());
-
-            /*
-            // Dodajemy UUID przedmiotu źródłowego, jeśli go jeszcze nie ma
-            if (!uuidList.contains(source.getUniqueId())) {
-                uuidList.add(source.getUniqueId());
-            }
-
-             */
-
-            // Dodajemy również UUID przedmiotu docelowego, jeśli go jeszcze nie ma
-            if (!uuidList.contains(target.getUniqueId())) {
-                uuidList.add(target.getUniqueId());
-            }
-
-            // Informacje debugowe
-            pluginLogger.log(PluginLogger.LogLevel.DEBUG,"Updated stacked items for generator: " + generatorName);
-        } else {
-            pluginLogger.log(PluginLogger.LogLevel.DEBUG,"Source item does not belong to any tracked generator.");
-        }
-    }
 
     public void checkAndUpdateSpawnedItems() {
         for (Map.Entry<String, List<UUID>> entry : stackedItems.entrySet()) {
@@ -198,52 +179,8 @@ public final class BetterGen extends JavaPlugin implements Listener {
         }
     }
 
-    public void startGeneratorsScheduler() {
-        generatorsTaks = new BukkitRunnable() {
-            @Override
-            public void run() {
-                spawnItemFromGenerator();
-                checkAndUpdateSpawnedItems();
-            }
-        }.runTaskTimer(this, 0, 10); // Interval converted to ticks (1 second)
-    }
-    @Override
-    public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        if (args.length==1&&args[0].equals("reload")){
-            if(!sender.isOp()){
-                    sender.sendMessage(ChatColor.GOLD + "" + ChatColor.BOLD + "[BetterGen]" + ChatColor.DARK_RED + " You don't have permission!");
-            }
-            else {
-                loadGenerators();
-                sender.sendMessage(ChatColor.GOLD + "" + ChatColor.BOLD + "[BetterGen]" + ChatColor.AQUA + " Generators reloaded!");
-            }
-        }
-        if(args.length==5) {
-            if (sender instanceof Player) {
-                if (sender.isOp()) {
-                    handleAddSpawnerCommand(sender, args[0], args[1], Integer.parseInt(args[2]),Integer.parseInt(args[3]),Double.parseDouble(args[4]));
-                    sender.sendMessage(ChatColor.GOLD + "" + ChatColor.BOLD + "[BetterGen]" + ChatColor.AQUA + " Generator created!");
-                    return true;
-                }
-            }
-        }else{
-            sender.sendMessage("correct usage /bg genName itemName itemsPerSpawn maxItems Cooldown");
-            return false;
-        }
-        return false;
-    }
-    public void handleAddSpawnerCommand(CommandSender sender, String generatorName, String itemName, int itemsPerSpawn,int maxItems, double Cooldown) {
-        if (sender instanceof Player) {
-            Player player = (Player) sender;
-            if (player.isOp()) {
-                Location targetLocation = player.getTargetBlock(null, 100).getLocation();
-                targetLocation.add(0, 1, 0);
-                saveGenerator(targetLocation,generatorName,itemName,itemsPerSpawn,maxItems, Cooldown);
-            } else {
-                player.sendMessage(ChatColor.GOLD + "" + ChatColor.BOLD + "[BetterGen]" + ChatColor.DARK_RED + " You don't have permission!");
-            }
-        }
-    }
+
+
     public void saveGenerator(Location location, String generatorName, String itemName, int itemsPerSpawn, int maxItems, double Cooldown) {
         FileConfiguration config = YamlConfiguration.loadConfiguration(generatorsFile);
 
@@ -280,24 +217,14 @@ public final class BetterGen extends JavaPlugin implements Listener {
             return null;
         }
     }
-    private boolean canSpawnItems(String generatorName, double cooldown) {
-        long currentTime = System.currentTimeMillis();
-        long lastUsage = generatorLastSpawnedTimes.getOrDefault(generatorName, 0L);
-        boolean canSpawn = (currentTime - lastUsage) >= (cooldown * 1000d);
-
-        pluginLogger.log(PluginLogger.LogLevel.SPAWNERS, "BetterGen.canSpawnItems generatorName: " + generatorName + ", lastUsage: " + lastUsage + ", currentTime: " + currentTime + ", cooldown: " + cooldown + ", canSpawn: " + canSpawn);
-
-        return canSpawn;
-    }
-
     public void spawnItemFromGenerator() {
-        long currentTime = System.currentTimeMillis();
+
             for (Map.Entry<String, Generator> entry : generatorsData.entrySet()) {
                 pluginLogger.log(PluginLogger.LogLevel.DEBUG, "Checking generator: " + entry.getKey());
                 Generator generator = entry.getValue();
                 String generatorName = generator.generatorName;
                 long lastSpawnTime = generatorLastSpawnedTimes.getOrDefault(entry.getKey(), 0L);
-
+                long currentTime = System.currentTimeMillis();
                 long timeSinceLastSpawn = currentTime - lastSpawnTime;
                 pluginLogger.log(PluginLogger.LogLevel.DEBUG, "Generator " + entry.getKey() + ", lastSpawnTime: "+lastSpawnTime+", currenttime: "+currentTime+", timeSinceLastSpawn: "+timeSinceLastSpawn);
                 if (timeSinceLastSpawn < generator.getCooldown()) {
@@ -328,45 +255,6 @@ public final class BetterGen extends JavaPlugin implements Listener {
                 pluginLogger.log(PluginLogger.LogLevel.DEBUG, "Finished checking generator: " + entry.getKey());
         }
     }
-    public void addUUIDtoStack(String key, UUID uuid) {
-        // Get the list of UUIDs for the given key
-        List<UUID> uuids = spawnedItemsV2.get(key);
-
-        // Check if the list already exists
-        if (uuids == null) {
-            // If not, create a new list and add it to the map
-            uuids = new ArrayList<>();
-            stackedItems.put(key, uuids);
-        }
-
-        // Add the UUID to the list
-        uuids.add(uuid);
-    }
-
-
-
-
-    public void spawnItemAtLocation(Location location, ItemStack itemStack, String generatorName) {
-        World world = location.getWorld();
-        if (world != null && itemStack != null) {
-            Item droppedItem = world.dropItem(location, itemStack);
-
-
-
-            Generator generator = generatorsData.get(generatorName);
-            if (generator != null) {
-                generator.spawnedItemsCount++;
-                pluginLogger.log(PluginLogger.LogLevel.DEBUG,"Item spawned from generator" +generatorName+", spawnedItemCount: "+generator.spawnedItemsCount);
-
-            }
-        } else {
-            pluginLogger.log(PluginLogger.LogLevel.DEBUG,"Invalid world or itemStack for location: " + location.toString());
-        }
-    }
-
-
-
-
 
     public ItemStack getItemStackFromString(String itemName) {
         Material material = Material.getMaterial(itemName.toUpperCase());
