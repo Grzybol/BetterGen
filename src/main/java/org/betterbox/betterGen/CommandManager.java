@@ -32,6 +32,7 @@ public class CommandManager implements CommandExecutor {
             else {
                 configManager.ReloadConfig();
                 betterGen.loadGenerators();
+                betterGen.startGeneratorsScheduler();
                 sender.sendMessage(ChatColor.GOLD + "" + ChatColor.BOLD + "[BetterGen]" + ChatColor.AQUA + " Generators reloaded!");
             }
         }
