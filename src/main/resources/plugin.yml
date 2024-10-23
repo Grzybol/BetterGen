@@ -10,12 +10,12 @@ commands:
     usage: /bg create
     aliases:
       - bettergen
-  bg create:
+  create:
     description: Create generator command
-    usage: /bg genName itemName itemsPerSpawn maxItems Cooldown
+    usage: /bg create genName itemName itemsPerSpawn maxItems Cooldown
     aliases:
       - bettergen create
-  bg reload:
+  reload:
     description: Reloads data and config
     usage: /bg reload
     aliases:
