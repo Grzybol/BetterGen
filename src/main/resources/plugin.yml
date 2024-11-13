@@ -4,6 +4,7 @@ main: org.betterbox.betterGen.BetterGen
 api-version: 1.18
 description: SkyGen plugin. https://github.com/Grzybol/BetterGen
 author: Grzybol
+depend: [ElasticBuffer]
 commands:
   bg:
     description: General command

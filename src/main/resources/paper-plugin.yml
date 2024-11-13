@@ -2,3 +2,6 @@ name: BetterGen
 version: ${project.version}
 main: org.betterbox.betterGen.BetterGen
 api-version: '1.18'
+load: STARTUP
+authors: [ Grzybol ]
+softdepend: [ElasticBuffer]

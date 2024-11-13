@@ -15,7 +15,7 @@ public class PluginLogger {
 
     private final File logFile;
     private JavaPlugin plugin;
-    private Set<LogLevel> enabledLogLevels; // Zbiór aktywnych poziomów logowania
+    Set<LogLevel> enabledLogLevels; // Zbiór aktywnych poziomów logowania
 
     // Enumeracja dla poziomów logowania
     public enum LogLevel {
