@@ -22,26 +22,27 @@ public class EventManager implements Listener {
     }
     @EventHandler
     public void onItemMerge(ItemMergeEvent event) {
+        String transactionID = UUID.randomUUID().toString();
         Item source = event.getEntity();
         Item target = event.getTarget();
 
         pluginLogger.log(PluginLogger.LogLevel.DEBUG,"onItemMerge Item stack merge detected: " + source.getItemStack().getType() + " into " + target.getItemStack().getType());
-        elasticBuffer.receiveLog("Item stack merge detected: " + source.getItemStack().getType() + " into " + target.getItemStack().getType(), "DEBUG","BetterGen");
+        elasticBuffer.receiveLog("Item stack merge detected: " + source.getItemStack().getType() + " into " + target.getItemStack().getType(), "DEBUG","BetterGen",transactionID);
 
         // Pobierz nazwę generatora dla przedmiotu źródłowego, jeśli istnieje
         String generatorName = betterGen.spawnedItems.get(source.getUniqueId());
 
         if (generatorName != null) {
-            elasticBuffer.receiveLog("onItemMerge generatorName: " + generatorName+", target.getUniqueId(): "+target.getUniqueId(), "DEBUG","BetterGen");
+            elasticBuffer.receiveLog("onItemMerge generatorName: " + generatorName+", target.getUniqueId(): "+target.getUniqueId(), "DEBUG","BetterGen",transactionID);
             // Sprawdzamy, czy dla tego generatora już istnieje lista UUID w mapie stackedItems
             List<UUID> uuidList = betterGen.stackedItems.computeIfAbsent(generatorName, k -> new ArrayList<>());
             // Dodajemy również UUID przedmiotu docelowego, jeśli go jeszcze nie ma
             if (!uuidList.contains(target.getUniqueId())) {
 
                 uuidList.add(target.getUniqueId());
-                elasticBuffer.receiveLog("onItemMerge generatorName: " + generatorName+", target.getUniqueId(): "+target.getUniqueId()+" added, uuidList: "+uuidList.toString(), "DEBUG","BetterGen");
+                elasticBuffer.receiveLog("onItemMerge generatorName: " + generatorName+", target.getUniqueId(): "+target.getUniqueId()+" added, uuidList: "+uuidList.toString(), "DEBUG","BetterGen",transactionID);
             }
-            elasticBuffer.receiveLog("Updated stacked items for generator: " + generatorName, "DEBUG","BetterGen");
+            elasticBuffer.receiveLog("Updated stacked items for generator: " + generatorName, "DEBUG","BetterGen",transactionID);
             // Informacje debugowe
             pluginLogger.log(PluginLogger.LogLevel.DEBUG,"Updated stacked items for generator: " + generatorName);
         } else {

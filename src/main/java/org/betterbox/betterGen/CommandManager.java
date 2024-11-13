@@ -1,5 +1,6 @@
 package org.betterbox.betterGen;
 
+import org.betterbox.elasticBuffer.ElasticBuffer;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.command.Command;
@@ -8,22 +9,28 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.util.UUID;
+
 public class CommandManager implements CommandExecutor {
     private final JavaPlugin plugin;
     private final BetterGen betterGen;
     private final FileManager fileManager;
     private final ConfigManager configManager;
+    private final ElasticBuffer elasticBuffer;
     private PluginLogger pluginLogger;
-    public CommandManager(JavaPlugin plugin, BetterGen betterGen, FileManager fileManager, PluginLogger pluginLogger,ConfigManager configManager){
+    public CommandManager(JavaPlugin plugin, BetterGen betterGen, FileManager fileManager, PluginLogger pluginLogger,ConfigManager configManager, ElasticBuffer elasticBuffer){
         this.configManager=configManager;
         this.plugin = plugin;
         this.pluginLogger = pluginLogger;
+        this.elasticBuffer=elasticBuffer;
         this.betterGen = betterGen;
         this.fileManager = fileManager;
     }
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+        String transactionID = UUID.randomUUID().toString();
         pluginLogger.log(PluginLogger.LogLevel.DEBUG, "CommandManager.onCommand called, sender: "+sender+", args: "+args.toString());
+        elasticBuffer.receiveLog("CommandManager.onCommand called, sender: "+sender+", args: "+args.toString()+", sender.getEffectivePermissions(): "+sender.getEffectivePermissions(),"DEBUG",plugin.getName(),transactionID);
         if (args.length==1&&args[0].equals("reload")){
             pluginLogger.log(PluginLogger.LogLevel.DEBUG, "CommandManager.onCommand called,reload, sender: "+sender+", args: "+args.toString());
             if(!sender.isOp()){
@@ -40,7 +47,7 @@ public class CommandManager implements CommandExecutor {
             pluginLogger.log(PluginLogger.LogLevel.DEBUG, "CommandManager.onCommand args.length==5 create, sender: "+sender+", args: "+args.toString());
             if (sender instanceof Player) {
                 if (sender.isOp()) {
-                    handleAddSpawnerCommand(sender, args[1], args[2], Integer.parseInt(args[3]),Integer.parseInt(args[4]),Double.parseDouble(args[5]));
+                    handleAddSpawnerCommand(sender, args[1], args[2], Integer.parseInt(args[3]),Integer.parseInt(args[4]),Double.parseDouble(args[5]),transactionID);
                     sender.sendMessage(ChatColor.GOLD + "" + ChatColor.BOLD + "[BetterGen]" + ChatColor.AQUA + " Generator created!");
                     return true;
                 }
@@ -51,7 +58,8 @@ public class CommandManager implements CommandExecutor {
         }
         return false;
     }
-    public void handleAddSpawnerCommand(CommandSender sender, String generatorName, String itemName, int itemsPerSpawn,int maxItems, double Cooldown) {
+    public void handleAddSpawnerCommand(CommandSender sender, String generatorName, String itemName, int itemsPerSpawn,int maxItems, double Cooldown,String transactionID) {
+        elasticBuffer.receiveLog("CommandManager.handleAddSpawnerCommand called sender"+sender+", generatorName" + generatorName+", itemName: "+itemName,"DEBUG","BetterGen",transactionID);
         if (sender instanceof Player) {
             Player player = (Player) sender;
             if (player.isOp()) {
