@@ -29,10 +29,9 @@ public class CommandManager implements CommandExecutor {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         String transactionID = UUID.randomUUID().toString();
-        pluginLogger.log(PluginLogger.LogLevel.DEBUG, "CommandManager.onCommand called, sender: "+sender+", args: "+args.toString());
-        elasticBuffer.receiveLog("CommandManager.onCommand called, sender: "+sender+", args: "+args.toString()+", sender.getEffectivePermissions(): "+sender.getEffectivePermissions(),"DEBUG",plugin.getName(),transactionID);
+        pluginLogger.log(PluginLogger.LogLevel.DEBUG,"CommandManager.onCommand called, sender: "+sender+", args: "+args.toString()+", sender.getEffectivePermissions(): "+sender.getEffectivePermissions(),transactionID);
         if (args.length==1&&args[0].equals("reload")){
-            pluginLogger.log(PluginLogger.LogLevel.DEBUG, "CommandManager.onCommand called,reload, sender: "+sender+", args: "+args.toString());
+            pluginLogger.log(PluginLogger.LogLevel.DEBUG, "CommandManager.onCommand called,reload, sender: "+sender+", args: "+args.toString(),transactionID);
             if(!sender.isOp()){
                 sender.sendMessage(ChatColor.GOLD + "" + ChatColor.BOLD + "[BetterGen]" + ChatColor.DARK_RED + " You don't have permission!");
             }
@@ -44,7 +43,7 @@ public class CommandManager implements CommandExecutor {
             }
         }
         if(args.length==6 && args[0].equalsIgnoreCase("create")) {
-            pluginLogger.log(PluginLogger.LogLevel.DEBUG, "CommandManager.onCommand args.length==5 create, sender: "+sender+", args: "+args.toString());
+            pluginLogger.log(PluginLogger.LogLevel.DEBUG, "CommandManager.onCommand args.length==5 create, sender: "+sender+", args: "+args.toString(),transactionID);
             if (sender instanceof Player) {
                 if (sender.isOp()) {
                     handleAddSpawnerCommand(sender, args[1], args[2], Integer.parseInt(args[3]),Integer.parseInt(args[4]),Double.parseDouble(args[5]),transactionID);
@@ -59,7 +58,7 @@ public class CommandManager implements CommandExecutor {
         return false;
     }
     public void handleAddSpawnerCommand(CommandSender sender, String generatorName, String itemName, int itemsPerSpawn,int maxItems, double Cooldown,String transactionID) {
-        elasticBuffer.receiveLog("CommandManager.handleAddSpawnerCommand called sender"+sender+", generatorName" + generatorName+", itemName: "+itemName,"DEBUG","BetterGen",transactionID);
+        pluginLogger.log(PluginLogger.LogLevel.DEBUG,"CommandManager.handleAddSpawnerCommand called sender"+sender+", generatorName" + generatorName+", itemName: "+itemName,transactionID);
         if (sender instanceof Player) {
             Player player = (Player) sender;
             if (player.isOp()) {

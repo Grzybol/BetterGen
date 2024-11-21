@@ -1,5 +1,7 @@
 package org.betterbox.betterGen;
 
+import org.betterbox.elasticBuffer.ElasticBuffer;
+import org.betterbox.elasticBuffer.ElasticBufferAPI;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.BufferedWriter;
@@ -16,6 +18,9 @@ public class PluginLogger {
     private final File logFile;
     private JavaPlugin plugin;
     Set<LogLevel> enabledLogLevels; // Zbiór aktywnych poziomów logowania
+    //public ElasticBuffer elasticBuffer;
+    public ElasticBufferAPI api;
+    public boolean isElasticBufferEnabled=false;
 
     // Enumeracja dla poziomów logowania
     public enum LogLevel {
@@ -23,6 +28,7 @@ public class PluginLogger {
     }
 
     public PluginLogger(String folderPath, Set<LogLevel> enabledLogLevels, JavaPlugin plugin) {
+        //ElasticBufferAPI api = new ElasticBufferAPI(elasticBuffer);
         this.enabledLogLevels = enabledLogLevels;
         this.plugin = plugin;
         // Tworzenie folderu dla logów, jeśli nie istnieje
@@ -65,6 +71,35 @@ public class PluginLogger {
                 writer.newLine();
             } catch (IOException e) {
                 plugin.getLogger().severe("PluginLogger: log: Could not write to log file!"+e.getMessage());
+            }
+            if(isElasticBufferEnabled){
+                try{
+                    api.log(message,level.toString(),plugin.getDescription().getName(),null);
+                }catch (Exception e) {
+                    plugin.getLogger().severe("PluginLogger: log: Could not write to log file!" + e.getMessage());
+                }
+            }
+
+        }
+    }
+    public void log(LogLevel level, String message,String transactionID) {
+        if (enabledLogLevels.contains(level)) {
+            // Dodanie timestampu i poziomu logowania do wiadomości
+            String timestamp = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS").format(new Date());
+            String logMessage = timestamp + " [" + level + "] - " + message;
+
+            try (BufferedWriter writer = new BufferedWriter(new FileWriter(logFile, true))) {
+                writer.write(logMessage);
+                writer.newLine();
+            } catch (IOException e) {
+                plugin.getLogger().severe("PluginLogger: log: Could not write to log file!"+e.getMessage());
+            }
+            if(isElasticBufferEnabled){
+                try{
+                    api.log(message,level.toString(),plugin.getDescription().getName(),transactionID);
+                }catch (Exception e) {
+                    plugin.getLogger().severe("PluginLogger: log: Could not write to log file!" + e.getMessage());
+                }
             }
         }
     }

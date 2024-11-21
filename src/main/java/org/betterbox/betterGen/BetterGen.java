@@ -73,62 +73,12 @@ public final class BetterGen extends JavaPlugin implements Listener {
         }
         Set<PluginLogger.LogLevel> defaultLogLevels = EnumSet.of(PluginLogger.LogLevel.INFO, PluginLogger.LogLevel.WARNING, PluginLogger.LogLevel.ERROR);
         pluginLogger = new PluginLogger(folderPath, defaultLogLevels,this);
-        try{
-            PluginManager pm = Bukkit.getPluginManager();
-            Plugin[] plugins = pm.getPlugins();
-            StringBuilder enabledPlugins = new StringBuilder("Enabled plugins: ");
-            StringBuilder disabledPlugins = new StringBuilder("Disabled plugins: ");
-            for (Plugin plugin : plugins) {
-                if (plugin.isEnabled()) {
-                    enabledPlugins.append(plugin.getName()).append(", ");
-                } else {
-                    disabledPlugins.append(plugin.getName()).append(", ");
-                }
-            }
-        // Zalogowanie włączonych pluginów
-            pluginLogger.log(PluginLogger.LogLevel.INFO, enabledPlugins.toString());
-        // Zalogowanie wyłączonych pluginów
-            pluginLogger.log(PluginLogger.LogLevel.INFO,  "Bukkit.getPluginManager().getPlugin(\"ElasticBuffer\").isEnabled():"+Bukkit.getPluginManager().getPlugin("ElasticBuffer").isEnabled()+",Bukkit.getPluginManager().getPlugin(\"ElasticBuffer\").isNaggable(): "+Bukkit.getPluginManager().getPlugin("ElasticBuffer").isNaggable());
-            pluginLogger.log(PluginLogger.LogLevel.INFO, disabledPlugins.toString());
-            pluginLogger.log(PluginLogger.LogLevel.INFO, "[BetterGen] Initializing basic components...");
-            try {
-                // Opóźnienie o 5 sekund, aby dać ElasticBuffer czas na pełną inicjalizację
-                Thread.sleep(1000);
-            } catch (InterruptedException e) {
-                pluginLogger.log(PluginLogger.LogLevel.WARNING, "[BetterGen] Initialization delay interrupted: " + e.getMessage());
-                Thread.currentThread().interrupt(); // Przywrócenie statusu przerwania wątku
-            }
-            //WORKING VERSION KURWA FINALLY
-            elasticBuffer = (ElasticBuffer) pm.getPlugin("ElasticBuffer");
-            pluginLogger.log(PluginLogger.LogLevel.DEBUG, "elasticBuffer: " + elasticBuffer);
-            assert elasticBuffer != null;
-            elasticBuffer.receiveLog("BetterGen initialized successfully! Starting schedulers", "INFO", getDescription().getName(),null);
-            elasticBuffer.sendLogs();
-            pluginLogger.log(PluginLogger.LogLevel.DEBUG, "LOGS SENT");
-            //WORKING VERSION KURWA FINALLY
-            startCheckAndUpdateTask();
-            startGeneratorsScheduler();
-
-
-            // Sprawdzenie, czy ElasticBuffer jest załadowany
-            /*
-            ElasticBufferAPI api = Bukkit.getServicesManager().load(ElasticBufferAPI.class);
-            if (api != null) {
-                pluginLogger.log(PluginLogger.LogLevel.INFO, "[BetterGen] Successfully loaded ElasticBufferAPI.");
-                elasticBuffer.receiveLog("Successfully loaded ElasticBufferAPI.", "INFO", getDescription().getName());
-            } else {
-                pluginLogger.log(PluginLogger.LogLevel.WARNING, "[BetterGen] Could not load ElasticBufferAPI. ElasticBuffer may not be enabled yet.");
-            }
-
-             */
-        }catch (Exception e){
-            pluginLogger.log(PluginLogger.LogLevel.ERROR, "ElasticBufferAPI instance found via ServicesManager, exception: "+e.getMessage());
-        }
+        loadElasticBuffer();
         folderPath =getDataFolder().getAbsolutePath();
         configManager = new ConfigManager(this, pluginLogger, folderPath);
         fileManager = new FileManager(getDataFolder().getAbsolutePath(),this,this,pluginLogger);
         getCommand("bg").setExecutor(new CommandManager(this,this,fileManager,pluginLogger,configManager,elasticBuffer));
-        eventManager = new EventManager(pluginLogger,this, elasticBuffer);
+        eventManager = new EventManager(pluginLogger,this, elasticBuffer,this);
         getServer().getPluginManager().registerEvents(eventManager, this);
         pluginLogger.log(PluginLogger.LogLevel.INFO, "Starting startGeneratorsScheduler and loadGenerators()");
         loadGenerators();
@@ -144,65 +94,77 @@ public final class BetterGen extends JavaPlugin implements Listener {
 
 
     }
-
-
-    private void completeInitialization() {
-        // Tutaj wykonujemy wszystkie kluczowe operacje, które zależą od ElasticBuffer
-        Plugin plugin = Bukkit.getPluginManager().getPlugin("ElasticBuffer");
-        if (plugin instanceof ElasticBuffer) {
-            ElasticBuffer bufferPlugin = (ElasticBuffer) plugin;
-            api = Bukkit.getServicesManager().load(ElasticBufferAPI.class);
-
-            if (api != null) {
-                pluginLogger.log(PluginLogger.LogLevel.INFO, "[BetterGen] Successfully loaded ElasticBufferAPI.");
-                elasticBuffer.receiveLog("BetterGen initialized successfully!", "INFO", getDescription().getName(),null);
-            } else {
-                pluginLogger.log(PluginLogger.LogLevel.ERROR, "[BetterGen] Failed to load ElasticBufferAPI.");
+    private void loadElasticBuffer(){
+        try{
+            PluginManager pm = Bukkit.getPluginManager();
+            Plugin[] plugins = pm.getPlugins();
+            StringBuilder enabledPlugins = new StringBuilder("Enabled plugins: ");
+            StringBuilder disabledPlugins = new StringBuilder("Disabled plugins: ");
+            for (Plugin plugin : plugins) {
+                if (plugin.isEnabled()) {
+                    enabledPlugins.append(plugin.getName()).append(", ");
+                } else {
+                    disabledPlugins.append(plugin.getName()).append(", ");
+                }
             }
+            // Zalogowanie włączonych pluginów
+            pluginLogger.log(PluginLogger.LogLevel.INFO, enabledPlugins.toString());
+            // Zalogowanie wyłączonych pluginów
+            pluginLogger.log(PluginLogger.LogLevel.INFO,  "Bukkit.getPluginManager().getPlugin(\"ElasticBuffer\").isEnabled():"+Bukkit.getPluginManager().getPlugin("ElasticBuffer").isEnabled()+",Bukkit.getPluginManager().getPlugin(\"ElasticBuffer\").isNaggable(): "+Bukkit.getPluginManager().getPlugin("ElasticBuffer").isNaggable());
+            pluginLogger.log(PluginLogger.LogLevel.INFO, disabledPlugins.toString());
+            pluginLogger.log(PluginLogger.LogLevel.INFO, "[BetterGen] Initializing basic components...");
+            try {
+                // Opóźnienie o 5 sekund, aby dać ElasticBuffer czas na pełną inicjalizację
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                pluginLogger.log(PluginLogger.LogLevel.WARNING, "[BetterGen] Initialization delay interrupted: " + e.getMessage());
+                Thread.currentThread().interrupt(); // Przywrócenie statusu przerwania wątku
+            }
+            elasticBuffer = (ElasticBuffer) pm.getPlugin("ElasticBuffer");
+            pluginLogger.log(PluginLogger.LogLevel.DEBUG, "elasticBuffer: " + elasticBuffer);
+            //assert elasticBuffer != null;
+            elasticBuffer.receiveLog("BetterGen initialized successfully! Starting schedulers", "INFO", getDescription().getName(),null);
 
-            // Pozostała inicjalizacja pluginu
-            pluginLogger.log(PluginLogger.LogLevel.INFO, "[BetterGen] Proceeding with further initialization...");
-            // Tutaj można umieścić kod odpowiedzialny za eventy, commandy, generatory itd.
-            startCheckAndUpdateTask();
-            startGeneratorsScheduler();
-        } else {
-            pluginLogger.log(PluginLogger.LogLevel.ERROR, "[BetterGen] ElasticBuffer plugin not available, initialization aborted.");
+            elasticBuffer.sendLogs();
+            pluginLogger.log(PluginLogger.LogLevel.DEBUG, "LOGS SENT");
+            ElasticBufferAPI api = new ElasticBufferAPI(elasticBuffer);
+            pluginLogger.isElasticBufferEnabled=true;
+            pluginLogger.api=api;
+        }catch (Exception e){
+            pluginLogger.log(PluginLogger.LogLevel.ERROR, "ElasticBufferAPI instance found via ServicesManager, exception: "+e.getMessage());
         }
     }
 
+
     public void startCheckAndUpdateTask() {
-        String transactionID = UUID.randomUUID().toString();
-        elasticBuffer.receiveLog("Starting schedulers", "INFO","BetterGen",transactionID);
+        //
+        pluginLogger.log(PluginLogger.LogLevel.DEBUG,"Starting schedulers",null);
         // Uruchamianie asynchronicznie co 0.5 sekundy
         Bukkit.getScheduler().runTaskTimerAsynchronously(this, () -> {
-            elasticBuffer.receiveLog("calling checkAndUpdateSpawnedItems()", "DEBUG","BetterGen",transactionID);
+            pluginLogger.log(PluginLogger.LogLevel.DEBUG,"calling checkAndUpdateSpawnedItems()",null);
             // Przełącz na główny wątek serwera do interakcji z encjami
             Bukkit.getScheduler().runTask(this, () -> {
                 checkAndUpdateSpawnedItems();
-                elasticBuffer.receiveLog("checkAndUpdateSpawnedItems() finished", "DEBUG","BetterGen",transactionID);
+                pluginLogger.log(PluginLogger.LogLevel.DEBUG,"checkAndUpdateSpawnedItems() finished",null);
             });
         }, 0L, 5L);  // 0.5 sekundy w tickach (10 ticków)
     }
     public void cancelGeneratorsTasks() {
-        elasticBuffer.receiveLog("cancelGeneratorsTasks() called", "DEBUG","BetterGen",null);
         if (generatorsTaks != null) {
             generatorsTaks.cancel();  // Anuluj bieżące zadanie, jeśli istnieje
-            elasticBuffer.receiveLog("cancelGeneratorsTasks() generatorsTaks"+generatorsTaks+" cancelled", "DEBUG","BetterGen",null);
-        }
+            }
     }
     public void startGeneratorsScheduler() {
         String transactionID = UUID.randomUUID().toString();
-        elasticBuffer.receiveLog("startGeneratorsScheduler() called", "DEBUG","BetterGen",transactionID);
+        pluginLogger.log(PluginLogger.LogLevel.DEBUG,"startGeneratorsScheduler() called",transactionID);
         cancelGeneratorsTasks();
         pluginLogger.log(PluginLogger.LogLevel.DEBUG, "BetterGen.startGeneratorsScheduler called" );
         for (Map.Entry<String, Generator> entry : generatorsData.entrySet()) {
             Generator generator = entry.getValue();
-            pluginLogger.log(PluginLogger.LogLevel.DEBUG, "BetterGen.startGeneratorsScheduler starting scheduler for "+generator.generatorName );
-            elasticBuffer.receiveLog("BetterGen.startGeneratorsScheduler starting scheduler for "+generator.generatorName, "DEBUG","BetterGen",transactionID);
+            pluginLogger.log(PluginLogger.LogLevel.DEBUG,"BetterGen.startGeneratorsScheduler starting scheduler for "+generator.generatorName,transactionID);
             long cooldownTicks = generator.getCooldown() / 50;  // Przeliczanie milisekund na ticki
             Bukkit.getScheduler().runTaskTimer(this, () -> {
-                pluginLogger.log(PluginLogger.LogLevel.DEBUG, "BetterGen.startGeneratorsScheduler scheduler started for "+generator.generatorName );
-                elasticBuffer.receiveLog("BetterGen.startGeneratorsScheduler scheduler started for "+generator.generatorName, "DEBUG","BetterGen",transactionID);
+                pluginLogger.log(PluginLogger.LogLevel.DEBUG,"BetterGen.startGeneratorsScheduler scheduler started for "+generator.generatorName,transactionID);
                 spawnItemFromGeneratorv2(generator);
             }, 0L, cooldownTicks);
         }
@@ -271,19 +233,19 @@ public final class BetterGen extends JavaPlugin implements Listener {
 
     public void checkAndUpdateSpawnedItems() {
         String transactionID = UUID.randomUUID().toString();
-        elasticBuffer.receiveLog("BetterGen.checkAndUpdateSpawnedItems called","DEBUG","BetterGen",transactionID);
+        pluginLogger.log(PluginLogger.LogLevel.DEBUG,"BetterGen.checkAndUpdateSpawnedItems called",transactionID);
 
         for (Map.Entry<String, List<UUID>> entry : stackedItems.entrySet()) {
             String generatorName = entry.getKey();
             List<UUID> uuidList = entry.getValue();
-            elasticBuffer.receiveLog("BetterGen.checkAndUpdateSpawnedItems checking generator "+generatorName+", uuidList "+uuidList.toString(),"DEBUG","BetterGen",transactionID);
+            pluginLogger.log(PluginLogger.LogLevel.DEBUG,"BetterGen.checkAndUpdateSpawnedItems checking generator "+generatorName+", uuidList "+uuidList.toString(),transactionID);
 
 
             Generator generator = generatorsData.get(generatorName);
             int actualCount = 0;
 
             if (generator == null) {
-                elasticBuffer.receiveLog("BetterGen.checkAndUpdateSpawnedItems - Generator not found for:" + generatorName,"DEBUG","BetterGen",transactionID);
+                pluginLogger.log(PluginLogger.LogLevel.DEBUG,"BetterGen.checkAndUpdateSpawnedItems - Generator not found for:" + generatorName,transactionID);
                 continue;  // Jeśli generator nie istnieje, kontynuuj z następnym
             }
 
@@ -296,16 +258,15 @@ public final class BetterGen extends JavaPlugin implements Listener {
                     actualCount += ((Item) item).getItemStack().getAmount();  // Sumowanie ilości itemów w stacku
                 } else {
                     uuidIterator.remove();  // Usuwanie UUID z listy, jeśli przedmiot jest nieważny
-                    pluginLogger.log(PluginLogger.LogLevel.DEBUG_LOCAL, "Removing invalid or dead item from the uuidList with UUID: " + itemId);
-                    elasticBuffer.receiveLog("BetterGen.checkAndUpdateSpawnedItems Removing invalid or dead item from the uuidList with UUID: " + itemId,"DEBUG","BetterGen",transactionID);
+                    pluginLogger.log(PluginLogger.LogLevel.DEBUG, "Removing invalid or dead item from the uuidList with UUID: " + itemId);elasticBuffer.receiveLog("BetterGen.checkAndUpdateSpawnedItems Removing invalid or dead item from the uuidList with UUID: " + itemId,"DEBUG","BetterGen",transactionID);
                 }
             }
 
             // Ustawianie aktualnej ilości przedmiotów na podstawie obliczonej wartości
             if (generator.spawnedItemsCount != actualCount) {
                 generator.spawnedItemsCount = actualCount;
-                elasticBuffer.receiveLog("BetterGen.checkAndUpdateSpawnedItems Updated spawnedItemsCount for generator: " + generatorName + " to " + actualCount,"DEBUG","BetterGen",transactionID);
-                pluginLogger.log(PluginLogger.LogLevel.DEBUG_LOCAL, "Updated spawnedItemsCount for generator: " + generatorName + " to " + actualCount);
+
+                pluginLogger.log(PluginLogger.LogLevel.DEBUG, "Updated spawnedItemsCount for generator: " + generatorName + " to " + actualCount);
             }
         }
     }
@@ -314,7 +275,7 @@ public final class BetterGen extends JavaPlugin implements Listener {
 
     public void saveGenerator(Location location, String generatorName, String itemName, int itemsPerSpawn, int maxItems, double Cooldown) {
         String transactionID = UUID.randomUUID().toString();
-        elasticBuffer.receiveLog("BetterGen.saveGenerator called. location:" + location+", generatorName:"+generatorName+", itemName:"+itemName+", itemsPerSpawn:"+itemsPerSpawn+", maxItems:"+maxItems+", Cooldown:"+Cooldown,"DEBUG","BetterGen",transactionID);
+        pluginLogger.log(PluginLogger.LogLevel.DEBUG,"BetterGen.saveGenerator called. location:" + location+", generatorName:"+generatorName+", itemName:"+itemName+", itemsPerSpawn:"+itemsPerSpawn+", maxItems:"+maxItems+", Cooldown:"+Cooldown,transactionID);
         FileConfiguration config = YamlConfiguration.loadConfiguration(generatorsFile);
 
         // Zapisywanie danych spawnera
@@ -326,10 +287,8 @@ public final class BetterGen extends JavaPlugin implements Listener {
         config.set(path + ".cooldown", Cooldown);
         try {
             config.save(generatorsFile);
-            elasticBuffer.receiveLog("BetterGen.saveGenerator Generator " + generatorName + " saved to file.","INFO","BetterGen",transactionID);
             pluginLogger.log(PluginLogger.LogLevel.INFO, "Generator " + generatorName + " saved to file.");
         } catch (Exception e) {
-            elasticBuffer.receiveLog("BetterGen.saveGenerator Could not save generator " + generatorName + " to file: " + e.getMessage(),"ERROR","BetterGen",transactionID);
             pluginLogger.log(PluginLogger.LogLevel.ERROR, "Could not save generator " + generatorName + " to file: " + e.getMessage());
         }
 
@@ -349,23 +308,19 @@ public final class BetterGen extends JavaPlugin implements Listener {
             }
         } catch (Exception e) {
             pluginLogger.log(PluginLogger.LogLevel.ERROR, "Error parsing location string: " + e.getMessage());
-            elasticBuffer.receiveLog("Error parsing location string: " + e.getMessage(), "ERROR","BetterGen",null);
             return null;
         }
     }
     public void spawnItemFromGeneratorv2(Generator generator) {
         String transactionID = UUID.randomUUID().toString();
-        elasticBuffer.receiveLog("BetterGen.spawnItemFromGeneratorv2 called, generator: "+generator, "DEBUG","BetterGen",transactionID);
         pluginLogger.log(PluginLogger.LogLevel.DEBUG_LOCAL, "BetterGen.spawnItemFromGeneratorv2 called, " + generator.generatorName);
         String generatorName = generator.generatorName;
         long lastSpawnTime = generatorLastSpawnedTimes.getOrDefault(generatorName, 0L);
         long currentTime = System.currentTimeMillis();  // Czas w milisekundach
         long timeSinceLastSpawn = currentTime - lastSpawnTime;
         pluginLogger.log(PluginLogger.LogLevel.DEBUG_LOCAL, "BetterGen.spawnItemFromGeneratorv2 generatorName: " + generator.generatorName+", timeSinceLastSpawn: "+timeSinceLastSpawn+", spawnedItemsCount: "+generator.spawnedItemsCount+", maxItems: "+generator.maxItems);
-        elasticBuffer.receiveLog("BetterGen.spawnItemFromGeneratorv2 generator:"+generator+", generatorName: " + generator.generatorName+", timeSinceLastSpawn: "+timeSinceLastSpawn+", spawnedItemsCount: "+generator.spawnedItemsCount+", maxItems: "+generator.maxItems,"DEBUG","BetterGen",transactionID);
         if (timeSinceLastSpawn >= generator.getCooldown()) {  // Cooldown jest już w milisekundach
             pluginLogger.log(PluginLogger.LogLevel.DEBUG, "BetterGen.spawnItemFromGeneratorv2 " + generator.generatorName+" not on delay");
-            elasticBuffer.receiveLog("BetterGen.spawnItemFromGeneratorv2 generatorName: " + generator.generatorName+", generatorName:" + generator.generatorName+" not on delay","DEBUG","BetterGen",transactionID);
             Location location = getLocationFromString(generator.location);
 
             if (generator.spawnedItemsCount < generator.maxItems) {
@@ -379,7 +334,6 @@ public final class BetterGen extends JavaPlugin implements Listener {
         World world = location.getWorld();
         int toSpawn = Math.min(generator.itemsPerSpawn, generator.maxItems - generator.spawnedItemsCount);
         int counter=0;
-        elasticBuffer.receiveLog("BetterGen.spawnItems called generator"+generator+", generatorName" + generator.generatorName+", toSpawn: "+toSpawn,"DEBUG","BetterGen",transactionID);
         pluginLogger.log(PluginLogger.LogLevel.DEBUG, "BetterGen.spawnItems called " + generator.generatorName+", toSpawn: "+toSpawn);
         for (int i = 0; i < toSpawn; i++) {
             ItemStack itemToSpawn = getItemStackFromString(generator.itemName);
@@ -389,7 +343,6 @@ public final class BetterGen extends JavaPlugin implements Listener {
             generator.spawnedItemsCount++;
             counter++;
         }
-        elasticBuffer.receiveLog("BetterGen.spawnItems called generator"+generator+", spawned items count: "+counter+", toSpawn: "+toSpawn,"DEBUG","BetterGen",transactionID);
         pluginLogger.log(PluginLogger.LogLevel.DEBUG, "Items spawned for generator: " + generator.generatorName+", spawned items count: "+counter);
     }
     public void spawnItemFromGenerator() {
