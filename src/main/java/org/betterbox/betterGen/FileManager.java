@@ -20,7 +20,7 @@ public class FileManager {
         // pluginLogger.log(PluginLogger.LogLevel.CUSTOM_MOBS, "Event.onEntityDamageByEntity
         this.plugin = plugin;
         this.betterGen = betterGen;
-        this.pluginLogger= pluginLogger;
+        this.pluginLogger = pluginLogger;
         File logFolder = new File(folderPath, "logs");
         if (!logFolder.exists()) {
             logFolder.mkdirs();

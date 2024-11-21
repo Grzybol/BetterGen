@@ -22,12 +22,13 @@ public class ConfigManager {
         this.plugin = plugin;
         this.pluginLogger = pluginLogger;
         this.rankHierarchy = new LinkedHashMap<>();
-        pluginLogger.log(PluginLogger.LogLevel.DEBUG,"ConfigManager called");
-        pluginLogger.log(PluginLogger.LogLevel.DEBUG,"ConfigManager: calling configureLogger");
+        pluginLogger.log(PluginLogger.LogLevel.DEBUG, "ConfigManager called");
+        pluginLogger.log(PluginLogger.LogLevel.DEBUG, "ConfigManager: calling configureLogger");
         configureLogger();
         CreateExampleConfigFile(folderPath);
     }
-    private void CreateExampleConfigFile(String folderPath){
+
+    private void CreateExampleConfigFile(String folderPath) {
         File exampleConfigFile = new File(folderPath, "config.yml");
         try (InputStream in = plugin.getResource("exampleFiles/config.yml")) {
             if (in == null) {
@@ -41,7 +42,7 @@ public class ConfigManager {
     }
 
     private void configureLogger() {
-        pluginLogger.log(PluginLogger.LogLevel.DEBUG,"ConfigManager: configureLogger called");
+        pluginLogger.log(PluginLogger.LogLevel.DEBUG, "ConfigManager: configureLogger called");
         configFile = new File(plugin.getDataFolder(), "config.yml");
         if (!configFile.exists()) {
             pluginLogger.log(PluginLogger.LogLevel.WARNING, "Config file does not exist, creating new one.");
@@ -54,15 +55,16 @@ public class ConfigManager {
         }
         ReloadConfig();
     }
-    public void ReloadConfig(){
-        pluginLogger.log(PluginLogger.LogLevel.DEBUG,"ConfigManager: ReloadConfig called");
+
+    public void ReloadConfig() {
+        pluginLogger.log(PluginLogger.LogLevel.DEBUG, "ConfigManager: ReloadConfig called");
         // Odczytanie ustawień log_level z pliku konfiguracyjnego
         configFile = new File(plugin.getDataFolder(), "config.yml");
         plugin.reloadConfig();
         logLevels = plugin.getConfig().getStringList("log_level");
         enabledLogLevels = new HashSet<>();
         if (logLevels == null || logLevels.isEmpty()) {
-            pluginLogger.log(PluginLogger.LogLevel.ERROR,"ConfigManager: ReloadConfig: no config file or no configured log levels! Saving default settings.");
+            pluginLogger.log(PluginLogger.LogLevel.ERROR, "ConfigManager: ReloadConfig: no config file or no configured log levels! Saving default settings.");
             // Jeśli konfiguracja nie określa poziomów logowania, użyj domyślnych ustawień
             enabledLogLevels = EnumSet.of(PluginLogger.LogLevel.INFO, PluginLogger.LogLevel.WARNING, PluginLogger.LogLevel.ERROR);
             updateConfig("log_level:\n  - INFO\n  - WARNING\n  - ERROR");
@@ -71,26 +73,28 @@ public class ConfigManager {
 
         for (String level : logLevels) {
             try {
-                pluginLogger.log(PluginLogger.LogLevel.DEBUG_LVL2,"ConfigManager: ReloadConfig: adding "+level.toUpperCase());
+                pluginLogger.log(PluginLogger.LogLevel.DEBUG_LVL2, "ConfigManager: ReloadConfig: adding " + level.toUpperCase());
                 enabledLogLevels.add(PluginLogger.LogLevel.valueOf(level.toUpperCase()));
-                pluginLogger.log(PluginLogger.LogLevel.DEBUG_LVL2,"ConfigManager: ReloadConfig: current log levels: "+ Arrays.toString(enabledLogLevels.toArray()));
+                pluginLogger.log(PluginLogger.LogLevel.DEBUG_LVL2, "ConfigManager: ReloadConfig: current log levels: " + Arrays.toString(enabledLogLevels.toArray()));
 
             } catch (IllegalArgumentException e) {
                 // Jeśli podano nieprawidłowy poziom logowania, zaloguj błąd
                 plugin.getServer().getLogger().warning("Invalid log level in config: " + level);
             }
         }
-        pluginLogger.log(PluginLogger.LogLevel.DEBUG,"ConfigManager: ReloadConfig: calling pluginLogger.setEnabledLogLevels(enabledLogLevels) with parameters: "+ Arrays.toString(enabledLogLevels.toArray()));
+        pluginLogger.log(PluginLogger.LogLevel.DEBUG, "ConfigManager: ReloadConfig: calling pluginLogger.setEnabledLogLevels(enabledLogLevels) with parameters: " + Arrays.toString(enabledLogLevels.toArray()));
 
         // Ustawienie aktywnych poziomów logowania w loggerze
         pluginLogger.setEnabledLogLevels(enabledLogLevels);
     }
+
     public Map<Integer, String> getRankHierarchy() {
         pluginLogger.log(PluginLogger.LogLevel.DEBUG, "ConfigManager: getRankHierarchy called");
         return rankHierarchy;
     }
+
     public void updateConfig(String configuration) {
-        pluginLogger.log(PluginLogger.LogLevel.DEBUG, "ConfigManager: updateConfig called with parameters "+ configuration);
+        pluginLogger.log(PluginLogger.LogLevel.DEBUG, "ConfigManager: updateConfig called with parameters " + configuration);
         try {
             List<String> lines = Files.readAllLines(Paths.get(configFile.toURI()));
 
